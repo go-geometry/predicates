@@ -1,0 +1,3 @@
+go test fuzz v1
+byte('[')
+[]byte("b822!AzCX1212218x0792107")

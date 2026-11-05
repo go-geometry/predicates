@@ -1,0 +1,13 @@
+go test fuzz v1
+float64(0)
+float64(-96)
+float64(0)
+float64(5.833333333333333)
+float64(451)
+float64(21)
+float64(0)
+float64(-96)
+float64(0)
+float64(106.66666666666666)
+float64(2.308333333333333)
+float64(-98.61904761904762)

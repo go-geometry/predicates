@@ -1,0 +1,3 @@
+go test fuzz v1
+byte('T')
+[]byte("bC000080\x800000022{0110100")
