@@ -73,6 +73,13 @@ func TestBitsIdenticalAcrossArchitectures(t *testing.T) {
 	n := 0
 	bitsCorpus(func(x float64) {
 		u := math.Float64bits(x)
+		// A NaN's sign and payload are not part of the result: the Fast
+		// variants overflow to Inf-Inf on huge input, and the hardware's
+		// default NaN is 0xfff8... on amd64 and 386 but 0x7ff8... on arm64
+		// (first CI run of this test: those lanes alone differed).
+		if x != x {
+			u = 0x7ff8000000000000
+		}
 		for i := range buf {
 			buf[i] = byte(u >> (8 * i))
 		}
