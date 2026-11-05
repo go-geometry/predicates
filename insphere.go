@@ -9,7 +9,7 @@ package predicates
 //
 // Evaluation is adaptive, as for Orient2D. NaN or ±Inf yields NaN.
 func InSphere(a, b, c, d, e [3]float64) float64 {
-	if !inRange4x3(a, b, c, d, lo5, hi5) || !inRange3(e, lo5, hi5) {
+	if !inRange5x3(a, b, c, d, e, lo5, hi5) {
 		return insphereBig(a, b, c, d, e)
 	}
 	aex, aey, aez := a[0]-e[0], a[1]-e[1], a[2]-e[2]
@@ -89,7 +89,7 @@ func InSphereFast(a, b, c, d, e [3]float64) float64 {
 // InSphereExact evaluates InSphere's determinant exactly, without the
 // adaptive stages.
 func InSphereExact(a, b, c, d, e [3]float64) float64 {
-	if !inRange4x3(a, b, c, d, lo5, hi5) || !inRange3(e, lo5, hi5) {
+	if !inRange5x3(a, b, c, d, e, lo5, hi5) {
 		return insphereBig(a, b, c, d, e)
 	}
 	return insphereExact(a, b, c, d, e)
@@ -103,10 +103,12 @@ func insphereAdapt(a, b, c, d, e [3]float64, permanent float64) float64 {
 	dex, dey, dez := d[0]-e[0], d[1]-e[1], d[2]-e[2]
 
 	// Stage B: the exact determinant of the rounded differences.
+	ar := &arena{}
 	row := func(x, y, z float64) [][]float64 {
-		return [][]float64{{x}, {y}, {z}, squareSumExp([]float64{x}, []float64{y}, []float64{z})}
+		xe, ye, ze := one(ar, x), one(ar, y), one(ar, z)
+		return [][]float64{xe, ye, ze, squareSumExp(ar, xe, ye, ze)}
 	}
-	det := estimate(detExp([][][]float64{row(aex, aey, aez), row(bex, bey, bez), row(cex, cey, cez), row(dex, dey, dez)}))
+	det := estimate(detExp(ar, [][][]float64{row(aex, aey, aez), row(bex, bey, bez), row(cex, cey, cez), row(dex, dey, dez)}))
 	errbound := ispErrBoundB * permanent
 	if det >= errbound || -det >= errbound {
 		return det
@@ -162,11 +164,12 @@ func insphereAdapt(a, b, c, d, e [3]float64, permanent float64) float64 {
 
 // insphereExact evaluates the determinant from the exact differences.
 func insphereExact(a, b, c, d, e [3]float64) float64 {
+	ar := &arena{}
 	row := func(p [3]float64) [][]float64 {
-		x, y, z := diffExp(p[0], e[0]), diffExp(p[1], e[1]), diffExp(p[2], e[2])
-		return [][]float64{x, y, z, squareSumExp(x, y, z)}
+		x, y, z := diffExp(ar, p[0], e[0]), diffExp(ar, p[1], e[1]), diffExp(ar, p[2], e[2])
+		return [][]float64{x, y, z, squareSumExp(ar, x, y, z)}
 	}
-	det := detExp([][][]float64{row(a), row(b), row(c), row(d)})
+	det := detExp(ar, [][][]float64{row(a), row(b), row(c), row(d)})
 	return det[len(det)-1]
 }
 
@@ -174,9 +177,10 @@ func insphereBig(a, b, c, d, e [3]float64) float64 {
 	if !finite(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2], d[0], d[1], d[2], e[0], e[1], e[2]) {
 		return nan
 	}
+	s := scaleOf(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2], d[0], d[1], d[2], e[0], e[1], e[2])
 	row := func(p [3]float64) []*bigInt {
-		x, y, z := bigDiff(p[0], e[0]), bigDiff(p[1], e[1]), bigDiff(p[2], e[2])
+		x, y, z := bigDiff(p[0], e[0], s), bigDiff(p[1], e[1], s), bigDiff(p[2], e[2], s)
 		return []*bigInt{x, y, z, bigSquareSum(x, y, z)}
 	}
-	return bigDet([][]*bigInt{row(a), row(b), row(c), row(d)}, 5)
+	return bigDet([][]*bigInt{row(a), row(b), row(c), row(d)}, 5*s)
 }

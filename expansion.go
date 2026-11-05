@@ -211,30 +211,50 @@ func scaleExp(h, e []float64, b float64) []float64 {
 	return h
 }
 
-// mulExp returns the exact product e*f as a new expansion: the sum over the
-// components of f of e scaled by each.
-func mulExp(e, f []float64) []float64 {
-	acc := scaleExp(make([]float64, 0, 2*len(e)), e, f[0])
+// arena hands out expansion buffers from large chunks, so that an exact
+// evaluation makes a handful of allocations instead of one per operation.
+type arena struct{ buf []float64 }
+
+// get returns an empty slice with capacity n.
+func (a *arena) get(n int) []float64 {
+	if cap(a.buf)-len(a.buf) < n {
+		a.buf = make([]float64, 0, max(2*cap(a.buf), n, 512))
+	}
+	l := len(a.buf)
+	a.buf = a.buf[:l+n]
+	return a.buf[l : l : l+n]
+}
+
+// mulExp returns the exact product e*f: the sum over the components of f of
+// e scaled by each. The smaller operand is the one iterated over.
+func mulExp(ar *arena, e, f []float64) []float64 {
+	if len(f) > len(e) {
+		e, f = f, e
+	}
+	acc := scaleExp(ar.get(2*len(e)), e, f[0])
+	if len(f) == 1 {
+		return acc
+	}
 	tmp := make([]float64, 0, 2*len(e))
 	for _, c := range f[1:] {
 		tmp = scaleExp(tmp, e, c)
-		acc = sumExp(make([]float64, 0, len(acc)+len(tmp)), acc, tmp)
+		acc = sumExp(ar.get(len(acc)+len(tmp)), acc, tmp)
 	}
 	return acc
 }
 
-// negExp returns -e as a new expansion.
-func negExp(e []float64) []float64 {
-	h := make([]float64, len(e))
+// negExp returns -e.
+func negExp(ar *arena, e []float64) []float64 {
+	h := ar.get(len(e))[:len(e)]
 	for i, c := range e {
 		h[i] = -c
 	}
 	return h
 }
 
-// addExp returns e+f as a new expansion.
-func addExp(e, f []float64) []float64 {
-	return sumExp(make([]float64, 0, len(e)+len(f)), e, f)
+// addExp returns e+f.
+func addExp(ar *arena, e, f []float64) []float64 {
+	return sumExp(ar.get(len(e)+len(f)), e, f)
 }
 
 // estimate returns the floating-point sum of the components of e, an

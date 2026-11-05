@@ -1,5 +1,7 @@
 package predicates
 
+import "math"
+
 // InCircle reports whether d lies inside the circle through a, b and c: a
 // positive value if it does, a negative value if it lies outside, zero if the
 // four points are cocircular. a, b, c must be in counterclockwise order
@@ -64,7 +66,12 @@ func InCircleExact(a, b, c, d [2]float64) float64 {
 }
 
 func inRange4x2(a, b, c, d [2]float64, lo, hi float64) bool {
-	return inRange2(a, b, c, lo, hi) && inRange(d[0], lo, hi) && inRange(d[1], lo, hi)
+	mx, mn := uint64(0), uint64(math.MaxUint64)
+	for _, p := range [4][2]float64{a, b, c, d} {
+		mx, mn = rangeAcc(mx, mn, p[0])
+		mx, mn = rangeAcc(mx, mn, p[1])
+	}
+	return rangeOK(mx, mn, lo, hi)
 }
 
 // incircleAdapt runs stages B, C and D.
@@ -74,12 +81,12 @@ func incircleAdapt(a, b, c, d [2]float64, permanent float64) float64 {
 	cdx, cdy := c[0]-d[0], c[1]-d[1]
 
 	// Stage B: the exact determinant of the rounded differences.
-	m := [][][]float64{
-		{{adx}, {ady}, squareSumExp([]float64{adx}, []float64{ady})},
-		{{bdx}, {bdy}, squareSumExp([]float64{bdx}, []float64{bdy})},
-		{{cdx}, {cdy}, squareSumExp([]float64{cdx}, []float64{cdy})},
+	ar := &arena{}
+	row := func(x, y float64) [][]float64 {
+		xe, ye := one(ar, x), one(ar, y)
+		return [][]float64{xe, ye, squareSumExp(ar, xe, ye)}
 	}
-	det := estimate(detExp(m))
+	det := estimate(detExp(ar, [][][]float64{row(adx, ady), row(bdx, bdy), row(cdx, cdy)}))
 	errbound := iccErrBoundB * permanent
 	if det >= errbound || -det >= errbound {
 		return det
@@ -119,11 +126,12 @@ func incircleAdapt(a, b, c, d [2]float64, permanent float64) float64 {
 
 // incircleExact evaluates the determinant from the exact differences.
 func incircleExact(a, b, c, d [2]float64) float64 {
+	ar := &arena{}
 	row := func(p [2]float64) [][]float64 {
-		x, y := diffExp(p[0], d[0]), diffExp(p[1], d[1])
-		return [][]float64{x, y, squareSumExp(x, y)}
+		x, y := diffExp(ar, p[0], d[0]), diffExp(ar, p[1], d[1])
+		return [][]float64{x, y, squareSumExp(ar, x, y)}
 	}
-	det := detExp([][][]float64{row(a), row(b), row(c)})
+	det := detExp(ar, [][][]float64{row(a), row(b), row(c)})
 	return det[len(det)-1]
 }
 
@@ -131,9 +139,10 @@ func incircleBig(a, b, c, d [2]float64) float64 {
 	if !finite(a[0], a[1], b[0], b[1], c[0], c[1], d[0], d[1]) {
 		return nan
 	}
+	s := scaleOf(a[0], a[1], b[0], b[1], c[0], c[1], d[0], d[1])
 	row := func(p [2]float64) []*bigInt {
-		x, y := bigDiff(p[0], d[0]), bigDiff(p[1], d[1])
+		x, y := bigDiff(p[0], d[0], s), bigDiff(p[1], d[1], s)
 		return []*bigInt{x, y, bigSquareSum(x, y)}
 	}
-	return bigDet([][]*bigInt{row(a), row(b), row(c)}, 4)
+	return bigDet([][]*bigInt{row(a), row(b), row(c)}, 4*s)
 }

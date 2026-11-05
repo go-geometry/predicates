@@ -108,7 +108,9 @@ func nudge(x float64, k int) float64 {
 func newRand(seed uint64) *rand.Rand { return rand.New(rand.NewPCG(seed, 0x9e3779b97f4a7c15)) }
 
 func randPt2(r *rand.Rand, scale float64) [2]float64 {
-	return [2]float64{(2*r.Float64() - 1) * scale, (2*r.Float64() - 1) * scale}
+	// float64(2*u) keeps the compiler from fusing 2*u - 1 into an FMA, so
+	// the corpus is the same on every architecture (bits_test.go).
+	return [2]float64{(float64(2*r.Float64()) - 1) * scale, (float64(2*r.Float64()) - 1) * scale}
 }
 
 // randExp returns a random float64 with a random exponent in [lo, hi].

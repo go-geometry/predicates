@@ -1,5 +1,7 @@
 package predicates
 
+import "math"
+
 // Orient3D reports the orientation of the tetrahedron a, b, c, d: a positive
 // value if d lies below the plane through a, b and c ("below" being the side
 // from which a, b, c appear clockwise; equivalently a, b, c appear
@@ -55,12 +57,27 @@ func Orient3DExact(a, b, c, d [3]float64) float64 {
 	return orient3dExact(a, b, c, d)
 }
 
-func inRange3(p [3]float64, lo, hi float64) bool {
-	return inRange(p[0], lo, hi) && inRange(p[1], lo, hi) && inRange(p[2], lo, hi)
+func rangeAcc3(mx, mn uint64, p [3]float64) (uint64, uint64) {
+	mx, mn = rangeAcc(mx, mn, p[0])
+	mx, mn = rangeAcc(mx, mn, p[1])
+	return rangeAcc(mx, mn, p[2])
 }
 
 func inRange4x3(a, b, c, d [3]float64, lo, hi float64) bool {
-	return inRange3(a, lo, hi) && inRange3(b, lo, hi) && inRange3(c, lo, hi) && inRange3(d, lo, hi)
+	mx, mn := rangeAcc3(0, math.MaxUint64, a)
+	mx, mn = rangeAcc3(mx, mn, b)
+	mx, mn = rangeAcc3(mx, mn, c)
+	mx, mn = rangeAcc3(mx, mn, d)
+	return rangeOK(mx, mn, lo, hi)
+}
+
+func inRange5x3(a, b, c, d, e [3]float64, lo, hi float64) bool {
+	mx, mn := rangeAcc3(0, math.MaxUint64, a)
+	mx, mn = rangeAcc3(mx, mn, b)
+	mx, mn = rangeAcc3(mx, mn, c)
+	mx, mn = rangeAcc3(mx, mn, d)
+	mx, mn = rangeAcc3(mx, mn, e)
+	return rangeOK(mx, mn, lo, hi)
 }
 
 // orient3dAdapt runs stages B, C and D.
@@ -119,10 +136,11 @@ func orient3dAdapt(a, b, c, d [3]float64, permanent float64) float64 {
 
 // orient3dExact evaluates the determinant from the exact differences.
 func orient3dExact(a, b, c, d [3]float64) float64 {
+	ar := &arena{}
 	row := func(p [3]float64) [][]float64 {
-		return [][]float64{diffExp(p[0], d[0]), diffExp(p[1], d[1]), diffExp(p[2], d[2])}
+		return [][]float64{diffExp(ar, p[0], d[0]), diffExp(ar, p[1], d[1]), diffExp(ar, p[2], d[2])}
 	}
-	det := detExp([][][]float64{row(a), row(b), row(c)})
+	det := detExp(ar, [][][]float64{row(a), row(b), row(c)})
 	return det[len(det)-1]
 }
 
@@ -130,8 +148,9 @@ func orient3dBig(a, b, c, d [3]float64) float64 {
 	if !finite(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2], d[0], d[1], d[2]) {
 		return nan
 	}
+	s := scaleOf(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2], d[0], d[1], d[2])
 	row := func(p [3]float64) []*bigInt {
-		return []*bigInt{bigDiff(p[0], d[0]), bigDiff(p[1], d[1]), bigDiff(p[2], d[2])}
+		return []*bigInt{bigDiff(p[0], d[0], s), bigDiff(p[1], d[1], s), bigDiff(p[2], d[2], s)}
 	}
-	return bigDet([][]*bigInt{row(a), row(b), row(c)}, 3)
+	return bigDet([][]*bigInt{row(a), row(b), row(c)}, 3*s)
 }
