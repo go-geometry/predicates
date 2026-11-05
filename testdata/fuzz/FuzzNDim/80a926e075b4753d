@@ -1,0 +1,3 @@
+go test fuzz v1
+byte('i')
+[]byte("9AZ\x16b %ABC!B079201011111")

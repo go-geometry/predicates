@@ -32,19 +32,67 @@ predicates.InSphere(a, b, c, d, e) // > 0 if e is inside the sphere through a..d
   NaN or ±Inf gives NaN.
 - **Identical results on every architecture**: every product is rounded by an
   explicit `float64(...)` conversion, so Go never fuses it into an FMA.
+- **Bounded cost** for untrusted input: `OrientN`/`InSphereN` accept
+  d ≤ 16 (`MaxDim`); NaN/±Inf are refused with `ErrNotFinite`.
 
 ## Validation
 
-The sign of every predicate is compared with an exact `math/big` rational
-evaluation on random, near-degenerate (rounded onto a line or circle, then
-nudged by a few ulps), exactly degenerate (collinear lattices, Pythagorean
-circles, repeated points under inexact translations), Shewchuk's tilted
-grid, and huge / tiny / mixed-magnitude inputs: zero mismatches. Planted
-breaks (stage A or stage B error bound removed) must produce wrong signs on
-the same corpus, or the test fails. 100 % statement coverage.
+- **Sign against exact arithmetic.** Every predicate's sign is compared with
+  a `math/big` rational evaluation on random, near-degenerate (rounded onto a
+  line, circle, plane or sphere, then nudged by a few ulps), exactly
+  degenerate (collinear and coplanar lattices, Pythagorean circles and
+  spheres, repeated points under inexact translations), Shewchuk's tilted
+  grid, and huge / tiny / mixed-magnitude inputs: zero mismatches. The
+  non-robust `Fast` evaluation is wrong on hundreds of these cases.
+- **Planted breaks.** With the stage A or stage B error bound removed, the
+  same corpus must produce wrong signs, or the test fails.
+- **Fuzzing.** `FuzzOrient2D`, `FuzzInCircle`, `FuzzOrient3D`,
+  `FuzzInSphere`, `FuzzNDim` check the sign against `math/big` on arbitrary
+  bits (NaN, ±Inf, subnormals included); the corpus is committed under
+  `testdata/fuzz`.
+- **Same bits everywhere.** `TestBitsIdenticalAcrossArchitectures` hashes the
+  bits of 5 600 results; CI checks the hash on amd64, arm64, riscv64,
+  loong64, ppc64le, s390x, 386 and arm. Removing one `float64(...)` from
+  `Orient2DFast` changes the hash on arm64, where Go then fuses an FMA.
+- **Against `predicates.c`.** `bench/` (a separate module, cgo) compiles
+  Shewchuk's code without FMA contraction and checks equal signs on every
+  benchmark input.
+- 100 % statement coverage, `-race`, govulncheck.
+
+## Performance
+
+```sh
+go test -run '^$' -bench . -benchmem       # fast vs adaptive vs exact
+cd bench && go test -run '^$' -bench .     # against predicates.c
+```
+
+Against `predicates.c` (clang `-O2`, no FMA contraction), same records,
+direct calls on both sides, Apple M4 Max, Go 1.27.3, single core, median of
+6 rounds. *Random*: points in [-1, 1), decided by the filter. *Degenerate*:
+one point repeated under inexact translations, exact zero, run to stage D.
+
+| | `predicates.c` | Go | Go allocs |
+|---|---:|---:|---:|
+| Orient2D random | 1.79 ns | 4.37 ns | 0 |
+| InCircle random | 3.97 ns | 9.08 ns | 0 |
+| Orient3D random | 3.57 ns | 11.7 ns | 0 |
+| InSphere random | 10.5 ns | 17.2 ns | 0 |
+| Orient2D degenerate | 1.29 ns | 4.19 ns | 0 |
+| InCircle degenerate | 3.52 µs | 5.57 µs | 18 |
+| Orient3D degenerate | 0.32 µs | 2.2 µs | 7 |
+| InSphere degenerate | 5.5 µs | 18 µs | 35 |
+
+⚠ The 1-minute load was 9.7–10.7 during this run, above the threshold the
+fleet measures at: times are indicative (the degenerate rows vary by up to
+±40 %), allocation counts are exact. **Go is slower than `predicates.c`
+on every row**, an open defect,
+[#4](https://github.com/go-geometry/predicates/issues/4): the fast path pays a
+range check and by-value array arguments; stage D evaluates a full
+expansion determinant instead of Shewchuk's incremental tail products.
 
 Part of [go-geometry](https://go-geometry.github.io/); design:
-[go-geometry design, section 4](https://go-geometry.github.io/docs/main/design/).
+[go-geometry design, section 4](https://go-geometry.github.io/docs/latest/design/);
+documentation: [predicates](https://go-geometry.github.io/docs/latest/predicates/).
 
 ## Licence
 

@@ -1,0 +1,3 @@
+go test fuzz v1
+byte('\x00')
+[]byte("\x9786A&*1112a11A70\x1dC'#79\xf3\xd5")
