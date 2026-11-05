@@ -15,32 +15,42 @@ func rat(x float64) *big.Rat { return new(big.Rat).SetFloat64(x) }
 
 func ratSub(a, b float64) *big.Rat { return new(big.Rat).Sub(rat(a), rat(b)) }
 
-// ratDet is the determinant by cofactor expansion along the first row.
+// ratDet is the determinant by Gaussian elimination over the rationals
+// (row swaps on a zero pivot). m is copied, not modified.
 func ratDet(m [][]*big.Rat) *big.Rat {
 	n := len(m)
-	if n == 1 {
-		return new(big.Rat).Set(m[0][0])
-	}
-	sum := new(big.Rat)
-	for j := 0; j < n; j++ {
-		if m[0][j].Sign() == 0 {
-			continue
-		}
-		sub := make([][]*big.Rat, n-1)
-		for i := 1; i < n; i++ {
-			row := make([]*big.Rat, 0, n-1)
-			row = append(row, m[i][:j]...)
-			row = append(row, m[i][j+1:]...)
-			sub[i-1] = row
-		}
-		t := new(big.Rat).Mul(m[0][j], ratDet(sub))
-		if j%2 == 1 {
-			sum.Sub(sum, t)
-		} else {
-			sum.Add(sum, t)
+	a := make([][]*big.Rat, n)
+	for i := range m {
+		a[i] = make([]*big.Rat, n)
+		for j := range m[i] {
+			a[i][j] = new(big.Rat).Set(m[i][j])
 		}
 	}
-	return sum
+	det := big.NewRat(1, 1)
+	for k := 0; k < n; k++ {
+		p := k
+		for p < n && a[p][k].Sign() == 0 {
+			p++
+		}
+		if p == n {
+			return new(big.Rat)
+		}
+		if p != k {
+			a[k], a[p] = a[p], a[k]
+			det.Neg(det)
+		}
+		det.Mul(det, a[k][k])
+		for i := k + 1; i < n; i++ {
+			if a[i][k].Sign() == 0 {
+				continue
+			}
+			f := new(big.Rat).Quo(a[i][k], a[k][k])
+			for j := k; j < n; j++ {
+				a[i][j].Sub(a[i][j], new(big.Rat).Mul(f, a[k][j]))
+			}
+		}
+	}
+	return det
 }
 
 // ratLiftedRow returns [p-q..., |p-q|²].
