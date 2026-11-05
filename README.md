@@ -22,6 +22,7 @@ predicates.InSphere(a, b, c, d, e) // > 0 if e is inside the sphere through a..d
 | Function | |
 |---|---|
 | `Orient2D`, `InCircle`, `Orient3D`, `InSphere` | adaptive: a floating-point filter (stage A), then stages B, C, D only when the filter cannot certify the sign |
+| `OrientN`, `InSphereN` | exact orientation and in-sphere tests in any dimension 1 ≤ d ≤ 16: floating-point expansion determinants up to order 8, big-integer elimination above |
 | `...Exact` | exact evaluation without the adaptive stages |
 | `...Fast` | plain floating-point evaluation, **not robust**, for comparison |
 

@@ -113,13 +113,13 @@ func TestBigResultMagnitude(t *testing.T) {
 // bigDet's pivoting: a zero leading entry with a nonzero one below, and a
 // zero column.
 func TestBigDetPivoting(t *testing.T) {
-	one := func(x float64) *bigInt { return toBig(x) }
-	m := [][]*bigInt{{one(0), one(1)}, {one(1), one(0)}}
-	if got := bigDet(m, 2); got != -1 {
+	bi := func(x float64) *bigInt { return toBig(x, 0) }
+	m := [][]*bigInt{{bi(0), bi(1)}, {bi(1), bi(0)}}
+	if got := bigDet(m, 0); got != -1 {
 		t.Fatalf("det [[0 1] [1 0]] = %v, want -1", got)
 	}
-	m = [][]*bigInt{{one(0), one(1)}, {one(0), one(2)}}
-	if got := bigDet(m, 2); got != 0 {
+	m = [][]*bigInt{{bi(0), bi(1)}, {bi(0), bi(2)}}
+	if got := bigDet(m, 0); got != 0 {
 		t.Fatalf("singular: got %v, want 0", got)
 	}
 }

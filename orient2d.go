@@ -103,11 +103,13 @@ func orient2dAdapt(a, b, c [2]float64, detsum float64) float64 {
 
 // orient2dExact is stage D computed directly from the exact differences.
 func orient2dExact(a, b, c [2]float64) float64 {
-	acx := diffExp(a[0], c[0])
-	bcx := diffExp(b[0], c[0])
-	acy := diffExp(a[1], c[1])
-	bcy := diffExp(b[1], c[1])
-	det := addExp(mulExp(acx, bcy), negExp(mulExp(acy, bcx)))
+	var back [64]float64
+	ar := &arena{buf: back[:0]}
+	acx := diffExp(ar, a[0], c[0])
+	bcx := diffExp(ar, b[0], c[0])
+	acy := diffExp(ar, a[1], c[1])
+	bcy := diffExp(ar, b[1], c[1])
+	det := addExp(ar, mulExp(ar, acx, bcy), mulExp(ar, negExp(ar, acy), bcx))
 	return det[len(det)-1]
 }
 
@@ -116,9 +118,10 @@ func orient2dBig(a, b, c [2]float64) float64 {
 	if !finite(a[0], a[1], b[0], b[1], c[0], c[1]) {
 		return nan
 	}
+	s := scaleOf(a[0], a[1], b[0], b[1], c[0], c[1])
 	m := [][]*bigInt{
-		{bigDiff(a[0], c[0]), bigDiff(a[1], c[1])},
-		{bigDiff(b[0], c[0]), bigDiff(b[1], c[1])},
+		{bigDiff(a[0], c[0], s), bigDiff(a[1], c[1], s)},
+		{bigDiff(b[0], c[0], s), bigDiff(b[1], c[1], s)},
 	}
-	return bigDet(m, 2)
+	return bigDet(m, 2*s)
 }
