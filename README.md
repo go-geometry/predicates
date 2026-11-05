@@ -15,11 +15,13 @@ import "github.com/go-geometry/predicates"
 
 predicates.Orient2D(a, b, c)    // > 0 counterclockwise, < 0 clockwise, 0 collinear
 predicates.InCircle(a, b, c, d) // > 0 if d is inside the circle through a, b, c (ccw)
+predicates.Orient3D(a, b, c, d) // > 0 if d is below the plane of a, b, c (ccw seen from above)
+predicates.InSphere(a, b, c, d, e) // > 0 if e is inside the sphere through a..d (Orient3D > 0)
 ```
 
 | Function | |
 |---|---|
-| `Orient2D`, `InCircle` | adaptive: a floating-point filter (stage A), then stages B, C, D only when the filter cannot certify the sign |
+| `Orient2D`, `InCircle`, `Orient3D`, `InSphere` | adaptive: a floating-point filter (stage A), then stages B, C, D only when the filter cannot certify the sign |
 | `...Exact` | exact evaluation without the adaptive stages |
 | `...Fast` | plain floating-point evaluation, **not robust**, for comparison |
 
