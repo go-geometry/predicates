@@ -62,9 +62,18 @@ predicates.InSphere(a, b, c, d, e) // > 0 if e is inside the sphere through a..d
 ## Performance
 
 ```sh
-go test -run '^$' -bench . -benchmem       # fast vs adaptive vs exact
-cd bench && go test -run '^$' -bench .     # against predicates.c
+go test -run '^$' -bench . -benchmem                  # fast vs adaptive vs exact
+cd bench && go test -run TestPerf .                   # CI mode: allocations, table, public functions
+cd bench && go test -run TestPerf -cpu 1 -perf.run .  # against predicates.c, load-gated
 ```
+
+The comparison with `predicates.c` runs through
+[refbench](https://github.com/go-scikit/refbench): interleaved rounds (C, Go,
+then Go, C), one core, the 1-minute load recorded for every round and a refusal
+to measure at 8 or more; method and status in [docs/perf.md](docs/perf.md), the
+generated table in [docs/perf-table.md](docs/perf-table.md). Timing with the new
+tool is deferred (the host's load was above the gate); the table below is from
+the previous harness, which ran all the C rounds and then all the Go rounds.
 
 Against `predicates.c` (clang `-O2`, no FMA contraction), same records,
 direct calls on both sides, Apple M4 Max, Go 1.27.3, single core, median of

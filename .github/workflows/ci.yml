@@ -158,6 +158,23 @@ jobs:
           done
           exit $fail
 
+  # The bench module (cgo, predicates.c): equal signs on every benchmark record,
+  # and refbench's CI mode (no timing): allocation counts equal docs/perf.json,
+  # docs/perf-table.md is what perf.json generates, every public function has a
+  # case or an entry in docs/perf-exempt.md.
+  bench:
+    name: bench module (refbench CI mode)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: 1.27.3
+      - run: go vet ./...
+        working-directory: bench
+      - run: go test -count=1 ./...
+        working-directory: bench
+
   govulncheck:
     name: govulncheck
     runs-on: ubuntu-latest
