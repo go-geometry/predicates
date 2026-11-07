@@ -100,13 +100,14 @@ func TestSignsAgreeWithPredicatesC(t *testing.T) {
 	}
 }
 
+// sink keeps the loops' sums alive.
 var sink float64
 
-// goLoop mirrors loops.c: the records are converted to the Go argument types
-// once, then each predicate is called directly (no function value), so both
-// sides time the same work.
-func goLoop(k Kind, pts []float64, iters int) float64 {
-	s := 0.0
+// goBody mirrors loops.c: the records are converted to the Go argument types
+// once, here, outside the timed body and outside the allocation count; the
+// returned body then calls the predicate directly (no function value), iters
+// times, so both sides time the same work.
+func goBody(k Kind, pts []float64) func(iters int) {
 	switch k {
 	case Orient2D, InCircle:
 		recs := make([][4][2]float64, records)
@@ -115,17 +116,23 @@ func goLoop(k Kind, pts []float64, iters int) float64 {
 			recs[i] = [4][2]float64{p2(p, 0), p2(p, 1), p2(p, 2), p2(p, 3)}
 		}
 		if k == Orient2D {
+			return func(iters int) {
+				s := 0.0
+				for i := 0; i < iters; i++ {
+					r := &recs[i%records]
+					s += predicates.Orient2D(r[0], r[1], r[2])
+				}
+				sink = s
+			}
+		}
+		return func(iters int) {
+			s := 0.0
 			for i := 0; i < iters; i++ {
 				r := &recs[i%records]
-				s += predicates.Orient2D(r[0], r[1], r[2])
+				s += predicates.InCircle(r[0], r[1], r[2], r[3])
 			}
-			return s
+			sink = s
 		}
-		for i := 0; i < iters; i++ {
-			r := &recs[i%records]
-			s += predicates.InCircle(r[0], r[1], r[2], r[3])
-		}
-		return s
 	}
 	recs := make([][5][3]float64, records)
 	for i := range recs {
@@ -133,34 +140,22 @@ func goLoop(k Kind, pts []float64, iters int) float64 {
 		recs[i] = [5][3]float64{p3(p, 0), p3(p, 1), p3(p, 2), p3(p, 3), p3(p, 4)}
 	}
 	if k == Orient3D {
+		return func(iters int) {
+			s := 0.0
+			for i := 0; i < iters; i++ {
+				r := &recs[i%records]
+				s += predicates.Orient3D(r[0], r[1], r[2], r[3])
+			}
+			sink = s
+		}
+	}
+	return func(iters int) {
+		s := 0.0
 		for i := 0; i < iters; i++ {
 			r := &recs[i%records]
-			s += predicates.Orient3D(r[0], r[1], r[2], r[3])
+			s += predicates.InSphere(r[0], r[1], r[2], r[3], r[4])
 		}
-		return s
+		sink = s
 	}
-	for i := 0; i < iters; i++ {
-		r := &recs[i%records]
-		s += predicates.InSphere(r[0], r[1], r[2], r[3], r[4])
-	}
-	return s
 }
 
-func BenchmarkVsPredicatesC(b *testing.B) {
-	for _, pr := range preds {
-		for _, deg := range []bool{false, true} {
-			kind := "random"
-			if deg {
-				kind = "degenerate"
-			}
-			pts := inputs(pr.per, deg, pr.repeat)
-			b.Run(pr.name+"/"+kind+"/c", func(b *testing.B) {
-				sink = Loop(pr.kind, pts, records, b.N)
-			})
-			b.Run(pr.name+"/"+kind+"/go", func(b *testing.B) {
-				b.ReportAllocs()
-				sink = goLoop(pr.kind, pts, b.N)
-			})
-		}
-	}
-}

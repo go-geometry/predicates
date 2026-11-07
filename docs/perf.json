@@ -1,0 +1,166 @@
+{
+  "schema": 1,
+  "status": "deferred",
+  "date": "2026-11-07T20:54:17+01:00",
+  "commit": "625791f",
+  "repo": "go-geometry/predicates",
+  "go_version": "go1.27.3",
+  "machine": "Apple M4 Max, darwin/arm64",
+  "ref_versions": {
+    "cgo flags": "-O2 -w; no FMA contraction (pragmas in shewchuk.c)",
+    "predicates.c": "Shewchuk, public domain (copied verbatim in bench/shewchuk.c)"
+  },
+  "max_load": 8,
+  "load": {
+    "min": 0,
+    "median": 0,
+    "max": 0
+  },
+  "valid": true,
+  "rows": [
+    {
+      "name": "Orient2D/random",
+      "func": "Orient2D",
+      "reference": "predicates.c (Shewchuk, cgo, no FMA contraction)",
+      "parity": "exact",
+      "allocs": 0,
+      "go": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ref": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ratio": 0
+    },
+    {
+      "name": "Orient2D/degenerate",
+      "func": "Orient2D",
+      "reference": "predicates.c (Shewchuk, cgo, no FMA contraction)",
+      "parity": "exact",
+      "allocs": 0,
+      "go": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ref": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ratio": 0
+    },
+    {
+      "name": "InCircle/random",
+      "func": "InCircle",
+      "reference": "predicates.c (Shewchuk, cgo, no FMA contraction)",
+      "parity": "exact",
+      "allocs": 0,
+      "go": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ref": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ratio": 0
+    },
+    {
+      "name": "InCircle/degenerate",
+      "func": "InCircle",
+      "reference": "predicates.c (Shewchuk, cgo, no FMA contraction)",
+      "parity": "exact",
+      "allocs": 18.5078125,
+      "go": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ref": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ratio": 0
+    },
+    {
+      "name": "Orient3D/random",
+      "func": "Orient3D",
+      "reference": "predicates.c (Shewchuk, cgo, no FMA contraction)",
+      "parity": "exact",
+      "allocs": 0,
+      "go": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ref": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ratio": 0
+    },
+    {
+      "name": "Orient3D/degenerate",
+      "func": "Orient3D",
+      "reference": "predicates.c (Shewchuk, cgo, no FMA contraction)",
+      "parity": "exact",
+      "allocs": 7.84375,
+      "go": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ref": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ratio": 0
+    },
+    {
+      "name": "InSphere/random",
+      "func": "InSphere",
+      "reference": "predicates.c (Shewchuk, cgo, no FMA contraction)",
+      "parity": "exact",
+      "allocs": 0,
+      "go": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ref": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ratio": 0
+    },
+    {
+      "name": "InSphere/degenerate",
+      "func": "InSphere",
+      "reference": "predicates.c (Shewchuk, cgo, no FMA contraction)",
+      "parity": "exact",
+      "allocs": 35.35546875,
+      "go": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ref": {
+        "median": 0,
+        "q1": 0,
+        "q3": 0
+      },
+      "ratio": 0
+    }
+  ]
+}
