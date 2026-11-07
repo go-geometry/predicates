@@ -158,4 +158,3 @@ func goBody(k Kind, pts []float64) func(iters int) {
 		sink = s
 	}
 }
-
